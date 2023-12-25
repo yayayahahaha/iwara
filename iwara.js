@@ -21,14 +21,13 @@ function start() {
 
   tasks
     .doPromise()
-    .then(() => {
-      // TODO 做檢查, taskSystem 的 status 那些的
+    .then((res) => {
+      console.log(res)
+      // TODO 做檢查, taskSystem 的 status 那些的, 再看看要除錯還是寫個 log 就好之類的
     })
-    .catch((error) => {
+    .catch(() => {
       // TODO 做 error handler
     })
-
-  console.log('done')
 }
 
 // TODO errorLog function, include create log file.
