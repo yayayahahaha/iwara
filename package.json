@@ -10,6 +10,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "create-gitignore": "^0.1.0"
+    "cheerio": "1.0.0-rc.12",
+    "create-gitignore": "^0.1.0",
+    "node-fetch": "^3.3.2",
+    "npm-flyc": "^1.0.19"
   }
 }
