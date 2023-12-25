@@ -1,4 +1,5 @@
 import fs from 'fs'
+import fetch from 'node-fetch'
 
 /**
  * @function readSettingJson
@@ -17,4 +18,26 @@ export function readSettingJson() {
     console.log('Parse setting.json file error!')
     return null
   }
+}
+
+/**
+ * @typedef PromiseFunction
+ * @returns {Promise}
+ * */
+/**
+ * @function createFetchJobs
+ * @param {Array} urls - iwara video detail url
+ * @returns {PromiseFunction[]}
+ * @description Create jobs of each fetch flow.
+ * */
+export function createFetchJobs(urls) {
+  return urls.map(
+    (url) => () =>
+      fetch(url)
+        .then((res) => res.json())
+        .then((res) => {
+          console.log(res)
+          return res
+        })
+  )
 }
