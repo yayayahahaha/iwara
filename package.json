@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -11,8 +12,11 @@
   "license": "ISC",
   "dependencies": {
     "cheerio": "1.0.0-rc.12",
-    "create-gitignore": "^0.1.0",
     "node-fetch": "^3.3.2",
     "npm-flyc": "^1.0.19"
+  },
+  "devDependencies": {
+    "eslint": "^8.56.0",
+    "eslint-plugin-vue": "^9.19.2"
   }
 }
