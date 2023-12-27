@@ -2,6 +2,7 @@ import fs from 'fs'
 import fetch from 'node-fetch'
 
 const IWARA_DETAIL_API_PREFIX = 'https://api.iwara.tv/video/'
+const REFERER_VALUE = 'https://www.iwara.tv/'
 const URL_ID_REGEXP = /\/video\/(\w+)\/\w+/
 
 /**
@@ -85,7 +86,43 @@ export function createFetchJobs(urls) {
       .then((res) => res.json())
       .then((res) => {
         const { title, id, fileUrl } = res
-        return new Iwara({ id, title, fileUrl })
+
+        // HINT 為了把 title 和 id 什麼的傳下去才這樣寫
+
+        console.log('fileUrl:', fileUrl)
+        return fetch(fileUrl, {
+          method: 'get',
+          headers: { referer: REFERER_VALUE },
+        })
+          .then((res) => res.json())
+          .then((fileInfo) => {
+            console.log(fileInfo.length)
+            const sourceFileUrl = ''
+            return { sourceFileUrl, id, title }
+          })
       })
   })
+}
+
+// NEXT: 把這個東西的結果放到 X-Version 裡面
+/**
+ * @function xVersionGenerator
+ * @param id
+ * @param expire
+ * @returns {Promise<string>}
+ * @example xVersionGenerator('c6382434-6ca7-4921-8398-d8137b4bc9fc', '1703705947205') -> 'b6be4437688a886d75a8555de91c7cc310d85d93'
+ * */
+function xVersionGenerator(id, expire) {
+  // const from = 'c6382434-6ca7-4921-8398-d8137b4bc9fc_1703705947205_5nFp9kmbNnHdAFhaqMvt'
+  // const to = 'b6be4437688a886d75a8555de91c7cc310d85d93'
+  // id_expire_5nFp9kmbNnHdAFhaqMvt
+
+  const HASH_KEY = '5nFp9kmbNnHdAFhaqMvt'
+  const hashedText = `${id}_${expire}_${HASH_KEY}`
+
+  return crypto.subtle.digest('SHA-1', new TextEncoder().encode(hashedText)).then((arrayBuffer) =>
+    Array.from(new Uint8Array(arrayBuffer))
+      .map((e) => e.toString(16).padStart(2, '0'))
+      .join('')
+  )
 }
