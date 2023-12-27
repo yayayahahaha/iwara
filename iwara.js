@@ -31,3 +31,4 @@ function start() {
 }
 
 // TODO errorLog function, include create log file.
+// TODO 看一下什麼是 TextEncoder, Unit8Array 和 crypto 的 subtle.digest 之類的東西
