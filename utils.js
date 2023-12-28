@@ -1,9 +1,14 @@
 import fs from 'fs'
 import fetch from 'node-fetch'
+import { download } from 'npm-flyc'
+import loggerFunction from 'progress-estimator'
+const logger = loggerFunction()
 
 const IWARA_DETAIL_API_PREFIX = 'https://api.iwara.tv/video/'
 const REFERER_VALUE = 'https://www.iwara.tv/'
-const URL_ID_REGEXP = /\/video\/(\w+)\/\w+/
+const URL_ID_REGEXP = /\/video\/(\w+)\/(\w+)/
+const SOURCE_FILE_NAME_VALUE = 'Source'
+const X_VERSION_HEADER_VALUE = 'X-Version'
 
 /**
  * @function createIwaraApiUrl
@@ -79,7 +84,8 @@ function Iwara(config) {
 export function createFetchJobs(urls) {
   return urls.map((url) => () => {
     const urlInfo = new URL(url)
-    const id = urlInfo.pathname.match(URL_ID_REGEXP)[1]
+    const urlMatchResult = urlInfo.pathname.match(URL_ID_REGEXP)
+    const [, id, slug] = urlMatchResult
 
     const iwaraApiUrl = createIwaraApiUrl(id)
 
@@ -87,8 +93,8 @@ export function createFetchJobs(urls) {
       .then((res) => res.json())
       .then((res) => {
         const {
-          title,
           fileUrl,
+          title,
           file: { id: fileId },
         } = res
 
@@ -97,27 +103,40 @@ export function createFetchJobs(urls) {
         // HINT 為了把各式各樣的東西傳下去才這樣寫
         return xVersionGenerator(fileId, expires).then((xVersion) => ({
           xVersion,
-          fileId,
-          fileUrl,
           title,
+          fileUrl,
         }))
       })
       .then((payload) => {
-        const { fileUrl, fileId, xVersion, title } = payload
+        const { xVersion, title, fileUrl } = payload
 
         return fetch(fileUrl, {
           method: 'get',
-          headers: { 'X-Version': xVersion, referer: REFERER_VALUE },
+          headers: { [X_VERSION_HEADER_VALUE]: xVersion, referer: REFERER_VALUE },
         })
           .then((res) => res.json())
           .then((fileSourceInfo) => {
-            console.log('fileSourceInfo:', fileSourceInfo)
+            const sourceFileInfo = fileSourceInfo.find((info) => info.name === SOURCE_FILE_NAME_VALUE)
+            // TODO 創建下載失敗的 log 檔案
+            if (sourceFileInfo == null) throw new Error(`[Error] url ${url} has no Source url!`)
 
-            const sourceFileUrl = ''
-            return { sourceFileUrl, id, fileId, title }
+            const {
+              src: { download },
+            } = sourceFileInfo
+            const downloadUrl = urlFormatter(download)
+
+            return { id, slug, title, downloadUrl }
           })
       })
+      .then((iwaraInfo) => {
+        console.log(iwaraInfo)
+      })
+      .catch(console.error)
   })
+}
+
+function urlFormatter(url) {
+  return /^https?:/.test(url) ? url : `https:${url}`
 }
 
 /**
