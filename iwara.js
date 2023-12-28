@@ -1,4 +1,4 @@
-import { downloadByUrls, readSettingJson } from './utils.js'
+import { downloadByAuthors, downloadByUrls, readSettingJson } from './utils.js'
 
 start()
 
@@ -18,8 +18,12 @@ function start() {
     return void console.error(`[Error] All items in key \`url\` must be a string`)
   }
 
+  // authors part
+  downloadByAuthors(authors)
+
   // urls part
-  downloadByUrls(urls)
+  // TODO testing code
+  // downloadByUrls(urls)
 }
 
 // TODO errorLog function, include create log file.

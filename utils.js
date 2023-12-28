@@ -6,8 +6,11 @@ import { TaskSystem } from 'npm-flyc'
 const logger = loggerFunction()
 
 const IWARA_AUTHOR_API_PREFIX = 'https://api.iwara.tv/profile/'
+
 const IWARA_DETAIL_API_PREFIX = 'https://api.iwara.tv/video/'
 const REFERER_VALUE = 'https://www.iwara.tv/'
+// https://www.iwara.tv/profile/robin00
+const AUTHOR_URL_REGEXP = /\/profile\/(\w+)/
 const URL_ID_REGEXP = /\/video\/(\w+)\/(\w+)/
 const SOURCE_FILE_NAME_VALUE = 'Source'
 const X_VERSION_HEADER_VALUE = 'X-Version'
@@ -51,6 +54,57 @@ export function readSettingJson() {
 }
 
 /**
+ * @function getIwaraByUserId
+ * @todo document
+ * */
+function getIwaraByUserId(userId, config = {}) {
+  const { limit = 1, page = 0 } = config
+  const apiUrl = 'https://api.iwara.tv/videos'
+  const query = {
+    user: userId,
+    limit,
+    page,
+  }
+  const queryString = new URLSearchParams(query).toString()
+
+  const fetchApi = `${apiUrl}?${queryString}`
+  return fetch(fetchApi).then((res) => res.json())
+}
+
+/**
+ * @function downloadByAuthors
+ * @param {string} authors
+ * @returns {Promise}
+ * @todo config implement and document
+ * */
+export function downloadByAuthors(authors) {
+  const jobs = _createFetchAuthorJob(authors)
+  const tasks = new TaskSystem(jobs, 3)
+
+  return tasks.doPromise()
+
+  function _createFetchAuthorJob(authors) {
+    return authors.map((author) => () => {
+      const username = author.match(AUTHOR_URL_REGEXP)[1]
+      const authorInfoApiUrl = createIwaraAuthorApiUrl(username)
+
+      return fetch(authorInfoApiUrl)
+        .then((res) => res.json())
+        .then((res) => {
+          const {
+            user: { id: userId },
+          } = res
+
+          return getIwaraByUserId(userId)
+        })
+        .then((res) => {
+          console.log(res)
+        })
+    })
+  }
+}
+
+/**
  * @function downloadByUrls
  * @param {string[]} urls
  * @returns {Promise}
@@ -59,7 +113,7 @@ export function readSettingJson() {
 export function downloadByUrls(urls, taskSystemConfig = {}) {
   const { taskNumber = 3 } = taskSystemConfig
 
-  const jobs = createFetchJobs(urls)
+  const jobs = createFetchUrlJob(urls)
   const tasks = new TaskSystem(jobs, taskNumber)
 
   return tasks
@@ -79,13 +133,13 @@ export function downloadByUrls(urls, taskSystemConfig = {}) {
  * @returns {Promise}
  * */
 /**
- * @function createFetchJobs
+ * @function createFetchUrlJob
  * @param {Array} urls - iwara video detail url
  * @returns {SingleJobFunction[]}
  * @description Create jobs of each fetch flow.
  * @todo it's a little bit hard to read, refactor later
  * */
-export function createFetchJobs(urls) {
+export function createFetchUrlJob(urls) {
   return urls.map((url) => () => {
     const urlInfo = new URL(url)
     const urlMatchResult = urlInfo.pathname.match(URL_ID_REGEXP)
