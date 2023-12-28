@@ -1,6 +1,6 @@
 import fs from 'fs'
 import fetch from 'node-fetch'
-import { download } from 'npm-flyc'
+import youtubeDl from 'youtube-dl-exec'
 import loggerFunction from 'progress-estimator'
 const logger = loggerFunction()
 
@@ -121,20 +121,29 @@ export function createFetchJobs(urls) {
             if (sourceFileInfo == null) throw new Error(`[Error] url ${url} has no Source url!`)
 
             const {
-              src: { download },
+              src: { view },
             } = sourceFileInfo
-            const downloadUrl = urlFormatter(download)
+            const downloadUrl = urlFormatter(view)
 
             return { id, slug, title, downloadUrl }
           })
       })
       .then((iwaraInfo) => {
-        console.log(iwaraInfo)
+        const { id, slug, title, downloadUrl } = iwaraInfo
+        const fileName = `${title}-${id}_${slug}.mp4`
+
+        const downloadPromise = youtubeDl(downloadUrl, { o: fileName })
+        return logger(downloadPromise, `Obtaining ${fileName}`)
       })
       .catch(console.error)
   })
 }
 
+/**
+ * @function urlFormatter
+ * @param {string} url
+ * @description Add prefix protocal `https` to url which start without it.
+ * */
 function urlFormatter(url) {
   return /^https?:/.test(url) ? url : `https:${url}`
 }
