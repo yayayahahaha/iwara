@@ -140,7 +140,7 @@ export function downloadByAuthors(authors) {
         })
         .then((urls) => {
           // NEXT 把這個東西直接丟到下載裡面嗎?
-          console.log(urls)
+          return downloadByUrls(urls, { taskNumber: 2 })
         })
         .catch(console.error)
     })
