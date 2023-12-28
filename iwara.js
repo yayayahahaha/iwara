@@ -17,7 +17,7 @@ function start() {
   }
 
   const jobs = createFetchJobs(urls)
-  const tasks = new TaskSystem(jobs, 1)
+  const tasks = new TaskSystem(jobs, 3)
 
   tasks
     .doPromise()

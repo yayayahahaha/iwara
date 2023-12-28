@@ -2,6 +2,7 @@ import fs from 'fs'
 import fetch from 'node-fetch'
 import youtubeDl from 'youtube-dl-exec'
 import loggerFunction from 'progress-estimator'
+import { download } from 'npm-flyc'
 const logger = loggerFunction()
 
 const IWARA_DETAIL_API_PREFIX = 'https://api.iwara.tv/video/'
@@ -109,10 +110,14 @@ export function createFetchJobs(urls) {
         // 這裡用 path 來改寫，像是 join 或 resolve
         const fileName = `${SAVED_FOLDER}/${username}/${title}-${id}_${slug}.mp4`
 
-        const downloadPromise = youtubeDl(downloadUrl, { o: fileName, dumpJson: true }).catch((error) => {
-          // TODO error log to a file or something
-          throw new Error(error)
-        })
+        const downloadPromise = youtubeDl(downloadUrl, { o: fileName, dumpJson: true })
+          // HINT 上面那個 dumpJson 如果不加的話沒有辦法偵測到 download failed,
+          // 加了的話沒辦法下載，所以先執行兩次。暫時沒有去找更優雅的解法
+          .then(() => youtubeDl(downloadUrl, { o: fileName }))
+          .catch((error) => {
+            // TODO error log to a file or something
+            throw new Error(error)
+          })
 
         return logger(downloadPromise, `Obtaining ${fileName}`)
       })
