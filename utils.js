@@ -74,6 +74,7 @@ function Iwara(config) {
  * @param {Array} urls - iwara video detail url
  * @returns {SingleJobFunction[]}
  * @description Create jobs of each fetch flow.
+ * @todo it's a little bit hard to read, refactor later
  * */
 export function createFetchJobs(urls) {
   return urls.map((url) => () => {
@@ -120,12 +121,15 @@ export function createFetchJobs(urls) {
 }
 
 /**
+ * @typedef xVersionGeneratorConfig
+ * @prooperty {boolean|false} verbose - Display more detail.
+ * */
+/**
  * @function xVersionGenerator
  * @param id
  * @param expires
  * @returns {Promise<string>}
  * @example xVersionGenerator('c6382434-6ca7-4921-8398-d8137b4bc9fc', '1703705947205') -> 'b6be4437688a886d75a8555de91c7cc310d85d93'
- * @todo config document
  * */
 function xVersionGenerator(id, expires, config = {}) {
   const defaultConfig = [['verbose', false]]
