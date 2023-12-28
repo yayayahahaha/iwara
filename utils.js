@@ -9,6 +9,7 @@ const REFERER_VALUE = 'https://www.iwara.tv/'
 const URL_ID_REGEXP = /\/video\/(\w+)\/(\w+)/
 const SOURCE_FILE_NAME_VALUE = 'Source'
 const X_VERSION_HEADER_VALUE = 'X-Version'
+const SAVED_FOLDER = 'saved'
 
 // TODO 資料夾分類方式: 存擋的目錄 -> {作者} -> 檔案
 // NEXT 找出作者的資料，往下傳，修改 .gitignore 檔案，
@@ -67,6 +68,7 @@ export function createFetchJobs(urls) {
         const {
           fileUrl,
           title,
+          user: { username },
           file: { id: fileId },
         } = res
 
@@ -76,11 +78,12 @@ export function createFetchJobs(urls) {
         return xVersionGenerator(fileId, expires).then((xVersion) => ({
           xVersion,
           title,
+          username,
           fileUrl,
         }))
       })
       .then((payload) => {
-        const { xVersion, title, fileUrl } = payload
+        const { xVersion, title, username, fileUrl } = payload
 
         return fetch(fileUrl, {
           method: 'get',
@@ -97,12 +100,14 @@ export function createFetchJobs(urls) {
             } = sourceFileInfo
             const downloadUrl = urlFormatter(view)
 
-            return { id, slug, title, downloadUrl }
+            return { id, slug, title, username, downloadUrl }
           })
       })
       .then((iwaraInfo) => {
-        const { id, slug, title, downloadUrl } = iwaraInfo
-        const fileName = `${title}-${id}_${slug}.mp4`
+        const { id, slug, title, username, downloadUrl } = iwaraInfo
+
+        // 這裡用 path 來改寫，像是 join 或 resolve
+        const fileName = `${SAVED_FOLDER}/${username}/${title}-${id}_${slug}.mp4`
 
         const downloadPromise = youtubeDl(downloadUrl, { o: fileName })
         return logger(downloadPromise, `Obtaining ${fileName}`)
