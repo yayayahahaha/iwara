@@ -2,7 +2,7 @@ import { downloadByAuthors, downloadByUrls, readSettingJson } from './utils.js'
 
 start()
 
-function start() {
+async function start() {
   const setting = readSettingJson()
   if (setting == null) return
 
@@ -19,11 +19,10 @@ function start() {
   }
 
   // authors part
-  downloadByAuthors(authors)
+  await downloadByAuthors(authors)
 
   // urls part
-  // TODO testing code
-  // downloadByUrls(urls)
+  await downloadByUrls(urls)
 }
 
 // TODO errorLog function, include create log file.
