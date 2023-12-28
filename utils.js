@@ -109,10 +109,13 @@ export function createFetchJobs(urls) {
         // 這裡用 path 來改寫，像是 join 或 resolve
         const fileName = `${SAVED_FOLDER}/${username}/${title}-${id}_${slug}.mp4`
 
-        const downloadPromise = youtubeDl(downloadUrl, { o: fileName })
+        const downloadPromise = youtubeDl(downloadUrl, { o: fileName, dumpJson: true }).catch((error) => {
+          // TODO error log to a file or something
+          throw new Error(error)
+        })
+
         return logger(downloadPromise, `Obtaining ${fileName}`)
       })
-      .catch(console.error)
   })
 }
 
