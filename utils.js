@@ -2,18 +2,16 @@ import fs from 'fs'
 import fetch from 'node-fetch'
 import youtubeDl from 'youtube-dl-exec'
 import loggerFunction from 'progress-estimator'
-import { download } from 'npm-flyc'
+import { TaskSystem } from 'npm-flyc'
 const logger = loggerFunction()
 
+const IWARA_AUTHOR_API_PREFIX = 'https://api.iwara.tv/profile/'
 const IWARA_DETAIL_API_PREFIX = 'https://api.iwara.tv/video/'
 const REFERER_VALUE = 'https://www.iwara.tv/'
 const URL_ID_REGEXP = /\/video\/(\w+)\/(\w+)/
 const SOURCE_FILE_NAME_VALUE = 'Source'
 const X_VERSION_HEADER_VALUE = 'X-Version'
 const SAVED_FOLDER = 'saved'
-
-// TODO 資料夾分類方式: 存擋的目錄 -> {作者} -> 檔案
-// NEXT 找出作者的資料，往下傳，修改 .gitignore 檔案，
 
 /**
  * @function createIwaraApiUrl
@@ -22,6 +20,15 @@ const SAVED_FOLDER = 'saved'
  * */
 function createIwaraApiUrl(urlId) {
   return `${IWARA_DETAIL_API_PREFIX}${urlId}`
+}
+
+/**
+ * @function createIwaraAuthorApiUrl
+ * @param {string} username - split from url
+ * @returns {string}
+ * */
+function createIwaraAuthorApiUrl(username) {
+  return `${IWARA_AUTHOR_API_PREFIX}${username}`
 }
 
 /**
@@ -41,6 +48,29 @@ export function readSettingJson() {
     console.error('Parse setting.json file error!')
     return null
   }
+}
+
+/**
+ * @function downloadByUrls
+ * @param {string[]} urls
+ * @returns {Promise}
+ * @todo config implement and document
+ * */
+export function downloadByUrls(urls, taskSystemConfig = {}) {
+  const { taskNumber = 3 } = taskSystemConfig
+
+  const jobs = createFetchJobs(urls)
+  const tasks = new TaskSystem(jobs, taskNumber)
+
+  return tasks
+    .doPromise()
+    .then((res) => {
+      console.log(res)
+      // TODO 做檢查, taskSystem 的 status 那些的, 再看看要除錯還是寫個 log 就好之類的
+    })
+    .catch(() => {
+      // TODO 做 error handler
+    })
 }
 
 /**
