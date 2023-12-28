@@ -13,7 +13,9 @@
   "dependencies": {
     "cheerio": "1.0.0-rc.12",
     "node-fetch": "^3.3.2",
-    "npm-flyc": "^1.0.19"
+    "npm-flyc": "^1.0.19",
+    "progress-estimator": "^0.3.1",
+    "youtube-dl-exec": "^2.5.3"
   },
   "devDependencies": {
     "eslint": "^8.56.0",
