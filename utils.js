@@ -10,6 +10,9 @@ const URL_ID_REGEXP = /\/video\/(\w+)\/(\w+)/
 const SOURCE_FILE_NAME_VALUE = 'Source'
 const X_VERSION_HEADER_VALUE = 'X-Version'
 
+// TODO 資料夾分類方式: 存擋的目錄 -> {作者} -> 檔案
+// NEXT 找出作者的資料，往下傳，修改 .gitignore 檔案，
+
 /**
  * @function createIwaraApiUrl
  * @param {string} urlId - split from url
@@ -39,40 +42,9 @@ export function readSettingJson() {
 }
 
 /**
- * @function Iwara
- * @returns {IwaraInstance}
- * */
-function Iwara(config) {
-  if (config == null) {
-    console.error(`[Error] Iwara: config should be an Object`)
-    return null
-  }
-
-  const neededKeys = ['id', 'title', 'fileUrl']
-  const defaultObject = Object.assign(this, Object.fromEntries(neededKeys.map((key) => [key, null])))
-
-  const check = neededKeys.every((key) => {
-    if (config[key] == null) {
-      console.error(`[Error] Iwara: Missing required key \`${key}\``)
-      return false
-    }
-    return true
-  })
-
-  if (!check) return defaultObject
-  return Object.assign(this, Object.fromEntries(neededKeys.map((key) => [key, config[key]])))
-}
-
-/**
- * @typedef IwaraInstance
- * @property {string} id
- * @property {string} title
- * @property {string} fileUrl
- * */
-/**
  * @typedef SingleJobFunction
  * @type function
- * @returns {Promise<IwaraInstance>}
+ * @returns {Promise}
  * */
 /**
  * @function createFetchJobs
