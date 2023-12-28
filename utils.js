@@ -2,6 +2,7 @@ import fs from 'fs'
 import fetch from 'node-fetch'
 import youtubeDl from 'youtube-dl-exec'
 import loggerFunction from 'progress-estimator'
+import { download } from 'npm-flyc'
 const logger = loggerFunction()
 
 const IWARA_DETAIL_API_PREFIX = 'https://api.iwara.tv/video/'
@@ -9,6 +10,10 @@ const REFERER_VALUE = 'https://www.iwara.tv/'
 const URL_ID_REGEXP = /\/video\/(\w+)\/(\w+)/
 const SOURCE_FILE_NAME_VALUE = 'Source'
 const X_VERSION_HEADER_VALUE = 'X-Version'
+const SAVED_FOLDER = 'saved'
+
+// TODO 資料夾分類方式: 存擋的目錄 -> {作者} -> 檔案
+// NEXT 找出作者的資料，往下傳，修改 .gitignore 檔案，
 
 /**
  * @function createIwaraApiUrl
@@ -39,40 +44,9 @@ export function readSettingJson() {
 }
 
 /**
- * @function Iwara
- * @returns {IwaraInstance}
- * */
-function Iwara(config) {
-  if (config == null) {
-    console.error(`[Error] Iwara: config should be an Object`)
-    return null
-  }
-
-  const neededKeys = ['id', 'title', 'fileUrl']
-  const defaultObject = Object.assign(this, Object.fromEntries(neededKeys.map((key) => [key, null])))
-
-  const check = neededKeys.every((key) => {
-    if (config[key] == null) {
-      console.error(`[Error] Iwara: Missing required key \`${key}\``)
-      return false
-    }
-    return true
-  })
-
-  if (!check) return defaultObject
-  return Object.assign(this, Object.fromEntries(neededKeys.map((key) => [key, config[key]])))
-}
-
-/**
- * @typedef IwaraInstance
- * @property {string} id
- * @property {string} title
- * @property {string} fileUrl
- * */
-/**
  * @typedef SingleJobFunction
  * @type function
- * @returns {Promise<IwaraInstance>}
+ * @returns {Promise}
  * */
 /**
  * @function createFetchJobs
@@ -95,6 +69,7 @@ export function createFetchJobs(urls) {
         const {
           fileUrl,
           title,
+          user: { username },
           file: { id: fileId },
         } = res
 
@@ -104,11 +79,12 @@ export function createFetchJobs(urls) {
         return xVersionGenerator(fileId, expires).then((xVersion) => ({
           xVersion,
           title,
+          username,
           fileUrl,
         }))
       })
       .then((payload) => {
-        const { xVersion, title, fileUrl } = payload
+        const { xVersion, title, username, fileUrl } = payload
 
         return fetch(fileUrl, {
           method: 'get',
@@ -125,17 +101,26 @@ export function createFetchJobs(urls) {
             } = sourceFileInfo
             const downloadUrl = urlFormatter(view)
 
-            return { id, slug, title, downloadUrl }
+            return { id, slug, title, username, downloadUrl }
           })
       })
       .then((iwaraInfo) => {
-        const { id, slug, title, downloadUrl } = iwaraInfo
-        const fileName = `${title}-${id}_${slug}.mp4`
+        const { id, slug, title, username, downloadUrl } = iwaraInfo
 
-        const downloadPromise = youtubeDl(downloadUrl, { o: fileName })
+        // 這裡用 path 來改寫，像是 join 或 resolve
+        const fileName = `${SAVED_FOLDER}/${username}/${title}-${id}_${slug}.mp4`
+
+        const downloadPromise = youtubeDl(downloadUrl, { o: fileName, dumpJson: true })
+          // HINT 上面那個 dumpJson 如果不加的話沒有辦法偵測到 download failed,
+          // 加了的話沒辦法下載，所以先執行兩次。暫時沒有去找更優雅的解法
+          .then(() => youtubeDl(downloadUrl, { o: fileName }))
+          .catch((error) => {
+            // TODO error log to a file or something
+            throw new Error(error)
+          })
+
         return logger(downloadPromise, `Obtaining ${fileName}`)
       })
-      .catch(console.error)
   })
 }
 
