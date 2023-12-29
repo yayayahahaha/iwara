@@ -159,15 +159,7 @@ export function downloadByUrls(urls, taskSystemConfig = {}) {
   const jobs = createFetchUrlJob(urls)
   const tasks = new TaskSystem(jobs, taskNumber)
 
-  return tasks
-    .doPromise()
-    .then((res) => {
-      console.log(res)
-      // TODO 做檢查, taskSystem 的 status 那些的, 再看看要除錯還是寫個 log 就好之類的
-    })
-    .catch(() => {
-      // TODO 做 error handler
-    })
+  return tasks.doPromise()
 }
 
 /**
