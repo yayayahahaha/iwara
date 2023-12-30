@@ -135,3 +135,34 @@ export function getIwaraListByUserId(userId, config = {}) {
   const fetchApi = `${apiUrl}?${queryString}`
   return fetch(fetchApi).then((res) => res.json())
 }
+
+/**
+ * @function settingCheck
+ * @returns {boolean}
+ * @description Check setting file is validated or not.
+ * */
+export function settingCheck() {
+  const setting = readSettingJson()
+  if (setting == null) return null
+
+  const { urls, authors } = setting
+  if (urls != null && !Array.isArray(urls)) {
+    console.error(`[Error] Key \`url\` in \`setting.json\` is not an array`)
+    return null
+  }
+  if (authors != null && !Array.isArray(authors)) {
+    console.error(`[Error] Key \`authors\` in \`setting.json\` is not an array`)
+    return null
+  }
+
+  if (urls.some((url) => typeof url !== 'string')) {
+    console.error(`[Error] All items in key \`url\` must be a string`)
+    return null
+  }
+  if (authors.some((author) => typeof author !== 'string')) {
+    console.error(`[Error] All items in key \`authors\` must be a string`)
+    return null
+  }
+
+  return { urls, authors }
+}

@@ -1,26 +1,13 @@
 import { downloadByAuthors, downloadByUrls } from './flow.js'
-import { readSettingJson } from './utils.js'
+import { settingCheck } from './utils.js'
 
 start()
 
 async function start() {
-  const setting = readSettingJson()
+  const setting = settingCheck()
   if (setting == null) return
 
   const { urls, authors } = setting
-  if (urls != null && !Array.isArray(urls)) {
-    return void console.error(`[Error] Key \`url\` in \`setting.json\` is not an array`)
-  }
-  if (authors != null && !Array.isArray(authors)) {
-    return void console.error(`[Error] Key \`authors\` in \`setting.json\` is not an array`)
-  }
-
-  if (urls.some((url) => typeof url !== 'string')) {
-    return void console.error(`[Error] All items in key \`url\` must be a string`)
-  }
-  if (authors.some((author) => typeof author !== 'string')) {
-    return void console.error(`[Error] All items in key \`authors\` must be a string`)
-  }
 
   // authors part
   console.log('Download by authors:')
