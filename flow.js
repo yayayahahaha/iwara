@@ -2,6 +2,8 @@ import fetch from 'node-fetch'
 import youtubeDl from 'youtube-dl-exec'
 import { TaskSystem } from 'npm-flyc'
 const { Job } = TaskSystem
+import loggerCreater from 'progress-estimator'
+const logger = loggerCreater()
 
 import {
   REFERER_VALUE,
@@ -143,8 +145,8 @@ export async function downloadByUrls(urls, taskSystemConfig = {}) {
                     throw new Error(error)
                   })
 
-                // return logger(downloadPromise, `Obtaining ${fileName}`)
-                return downloadPromise
+                return logger(downloadPromise, `Obtaining ${fileName}`)
+                // return downloadPromise
               })
           }
 
