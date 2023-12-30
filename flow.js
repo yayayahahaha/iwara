@@ -107,9 +107,9 @@ export async function downloadByUrls(urls, taskSystemConfig = {}) {
             return xVersionGenerator(fileId, expires)
               .then((xVersion) => Object.assign({}, info, { xVersion }))
               .then(async (payload) => {
-                const { xVersion, fileUrl, url } = payload
+                const { xVersion, fileUrlApi, url } = payload
 
-                return fetch(fileUrl, {
+                return fetch(fileUrlApi, {
                   method: 'get',
                   headers: { [X_VERSION_HEADER_VALUE]: xVersion, referer: REFERER_VALUE },
                 })
