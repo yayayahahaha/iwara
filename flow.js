@@ -101,7 +101,7 @@ export async function downloadByUrls(urls, taskSystemConfig = {}) {
           const { title } = info
           const jobName = title
           const job = async function () {
-            const { expires, fileId } = infoList
+            const { expires, fileId } = info
 
             // HINT 為了把各式各樣的東西傳下去才這樣寫
             return xVersionGenerator(fileId, expires)
