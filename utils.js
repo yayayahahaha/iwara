@@ -155,11 +155,11 @@ export function settingCheck() {
     return null
   }
 
-  if (urls.some((url) => typeof url !== 'string')) {
+  if (urls != null && urls.some((url) => typeof url !== 'string')) {
     console.error(`[Error] All items in key \`url\` must be a string`)
     return null
   }
-  if (authors.some((author) => typeof author !== 'string')) {
+  if (authors != null && authors.some((author) => typeof author !== 'string')) {
     console.error(`[Error] All items in key \`authors\` must be a string`)
     return null
   }

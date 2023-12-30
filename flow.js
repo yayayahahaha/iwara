@@ -25,6 +25,8 @@ import {
  * @todo config implement and document
  * */
 export function downloadByAuthors(authors) {
+  if (authors == null) return null
+
   const jobs = _createFetchAuthorJob(authors)
   const tasks = new TaskSystem(jobs, 3)
 
@@ -78,13 +80,78 @@ export function downloadByAuthors(authors) {
  * @returns {Promise}
  * @todo config implement and document
  * */
-export function downloadByUrls(urls, taskSystemConfig = {}) {
+export async function downloadByUrls(urls, taskSystemConfig = {}) {
+  if (urls == null) return null
+
   const { taskNumber = 3 } = taskSystemConfig
 
-  const jobs = _createFetchUrlJob(urls)
-  const tasks = new TaskSystem(jobs, taskNumber)
+  const jobsGetInfo = _createFetchUrlInfoJob(urls)
+  const tasksGetInfo = new TaskSystem(jobsGetInfo, taskNumber)
+  return tasksGetInfo
+    .doPromise()
+    .then((infoList) => infoList.filter((info) => info.status).map((info) => info.data))
+    .then((infoList) => {
+      const jobsDownload = _createDownloadJob(infoList)
+      const taskDownload = new TaskSystem(jobsDownload, taskNumber)
+      return taskDownload.doPromise()
 
-  return tasks.doPromise()
+      // TODO 這裡如果放上 async 的話， TaskSystem 那邊會卡住，可以看一下
+      function _createDownloadJob(infoList) {
+        return infoList.map((info) => {
+          const { title } = info
+          const jobName = title
+          const job = async function () {
+            const { expires, fileId } = infoList
+
+            // HINT 為了把各式各樣的東西傳下去才這樣寫
+            return xVersionGenerator(fileId, expires)
+              .then((xVersion) => Object.assign({}, info, { xVersion }))
+              .then(async (payload) => {
+                const { xVersion, fileUrl, url } = payload
+
+                return fetch(fileUrl, {
+                  method: 'get',
+                  headers: { [X_VERSION_HEADER_VALUE]: xVersion, referer: REFERER_VALUE },
+                })
+                  .then((res) => res.json())
+                  .then((fileSourceInfo) => {
+                    const sourceFileInfo = fileSourceInfo.find((info) => info.name === SOURCE_FILE_NAME_VALUE)
+                    // TODO 創建下載失敗的 log 檔案
+                    if (sourceFileInfo == null) throw new Error(`[Error] url ${url} has no Source url!`)
+
+                    const {
+                      src: { view },
+                    } = sourceFileInfo
+                    const downloadUrl = urlFormatter(view)
+
+                    return Object.assign({}, payload, { downloadUrl })
+                  })
+              })
+              .then((iwaraInfo) => {
+                const { id, slug, title, username, downloadUrl } = iwaraInfo
+
+                // 這裡用 path 來改寫，像是 join 或 resolve
+                const fileName = `${SAVED_FOLDER}/${username}/${title}-${id}_${slug}.mp4`
+
+                // TODO 這裡要取得 youtube-dl 的 download progress? 的 callback 去呼叫 Job 的 `updateProgress` or `setTotalProgress`
+                const downloadPromise = youtubeDl(downloadUrl, { o: fileName, dumpJson: true })
+                  // HINT 上面那個 dumpJson 如果不加的話沒有辦法偵測到 download failed,
+                  // 加了的話沒辦法下載，所以先執行兩次。暫時沒有去找更優雅的解法
+                  .then(() => youtubeDl(downloadUrl, { o: fileName }))
+                  .catch((error) => {
+                    // TODO error log to a file or something
+                    throw new Error(error)
+                  })
+
+                // return logger(downloadPromise, `Obtaining ${fileName}`)
+                return downloadPromise
+              })
+          }
+
+          return new Job({ jobName, job })
+        })
+      }
+    })
 
   /**
    * @typedef SingleJobFunction
@@ -92,77 +159,42 @@ export function downloadByUrls(urls, taskSystemConfig = {}) {
    * @returns {Promise}
    * */
   /**
-   * @function _createFetchUrlJob
+   * @function _createFetchUrlInfoJob
    * @param {Array} urls - iwara video detail url
    * @returns {SingleJobFunction[]}
    * @description Create jobs of each fetch flow.
    * @todo it's a little bit hard to read, refactor later
    * */
-  function _createFetchUrlJob(urls) {
-    return urls.map((url) => () => {
+  function _createFetchUrlInfoJob(urls) {
+    return urls.map((url) => {
       const { id, slug } = getUrlIdAndSlug(url)
-
       const iwaraApiUrl = createIwaraApiUrl(id)
 
-      return fetch(iwaraApiUrl)
-        .then((res) => res.json())
-        .then((res) => {
-          const {
-            fileUrl,
-            title,
-            user: { username },
-            file: { id: fileId },
-          } = res
+      return async () => {
+        return fetch(iwaraApiUrl)
+          .then((res) => res.json())
+          .then(async (res) => {
+            const {
+              fileUrl: fileUrlApi,
+              title,
+              user: { username },
+              file: { id: fileId },
+            } = res
 
-          const { expires } = Object.fromEntries(new URLSearchParams(new URL(fileUrl).search))
+            const { expires } = Object.fromEntries(new URLSearchParams(new URL(fileUrlApi).search))
 
-          // HINT 為了把各式各樣的東西傳下去才這樣寫
-          return xVersionGenerator(fileId, expires).then((xVersion) => ({
-            xVersion,
-            title,
-            username,
-            fileUrl,
-          }))
-        })
-        .then((payload) => {
-          const { xVersion, title, username, fileUrl } = payload
-
-          return fetch(fileUrl, {
-            method: 'get',
-            headers: { [X_VERSION_HEADER_VALUE]: xVersion, referer: REFERER_VALUE },
+            return {
+              url,
+              id,
+              slug,
+              expires,
+              fileId,
+              title,
+              username,
+              fileUrlApi,
+            }
           })
-            .then((res) => res.json())
-            .then((fileSourceInfo) => {
-              const sourceFileInfo = fileSourceInfo.find((info) => info.name === SOURCE_FILE_NAME_VALUE)
-              // TODO 創建下載失敗的 log 檔案
-              if (sourceFileInfo == null) throw new Error(`[Error] url ${url} has no Source url!`)
-
-              const {
-                src: { view },
-              } = sourceFileInfo
-              const downloadUrl = urlFormatter(view)
-
-              return { id, slug, title, username, downloadUrl }
-            })
-        })
-        .then((iwaraInfo) => {
-          const { id, slug, title, username, downloadUrl } = iwaraInfo
-
-          // 這裡用 path 來改寫，像是 join 或 resolve
-          const fileName = `${SAVED_FOLDER}/${username}/${title}-${id}_${slug}.mp4`
-
-          const downloadPromise = youtubeDl(downloadUrl, { o: fileName, dumpJson: true })
-            // HINT 上面那個 dumpJson 如果不加的話沒有辦法偵測到 download failed,
-            // 加了的話沒辦法下載，所以先執行兩次。暫時沒有去找更優雅的解法
-            .then(() => youtubeDl(downloadUrl, { o: fileName }))
-            .catch((error) => {
-              // TODO error log to a file or something
-              throw new Error(error)
-            })
-
-          // return logger(downloadPromise, `Obtaining ${fileName}`)
-          return downloadPromise
-        })
+      }
     })
   }
 }
