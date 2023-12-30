@@ -8,21 +8,26 @@ async function start() {
   if (setting == null) return
 
   const { urls, authors } = setting
-  if (!Array.isArray(urls)) {
+  if (urls != null && !Array.isArray(urls)) {
     return void console.error(`[Error] Key \`url\` in \`setting.json\` is not an array`)
   }
-
-  if (authors.some((author) => typeof author !== 'string')) {
-    return void console.error(`[Error] All items in key \`authors\` must be a string`)
+  if (authors != null && !Array.isArray(authors)) {
+    return void console.error(`[Error] Key \`authors\` in \`setting.json\` is not an array`)
   }
+
   if (urls.some((url) => typeof url !== 'string')) {
     return void console.error(`[Error] All items in key \`url\` must be a string`)
   }
+  if (authors.some((author) => typeof author !== 'string')) {
+    return void console.error(`[Error] All items in key \`authors\` must be a string`)
+  }
 
   // authors part
+  console.log('Download by authors:')
   await downloadByAuthors(authors)
 
   // urls part
+  console.log('Download by urls:')
   await downloadByUrls(urls)
 }
 
