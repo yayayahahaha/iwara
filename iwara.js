@@ -16,8 +16,6 @@ async function start() {
   // urls part
   console.log('Download by urls:')
   await downloadByUrls(urls)
-    .then((r) => r.map((r) => r.data))
-    .then(console.log)
 }
 
 // TODO errorLog function, include create log file.
