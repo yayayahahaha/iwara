@@ -200,3 +200,6 @@ export async function downloadByUrls(urls, taskSystemConfig = {}) {
     })
   }
 }
+
+// TODO 有些網址出來的會是一個 youtube: https://www.iwara.tv/video/mbrgxcm56rc2g4orp/kkvmd
+// TODO 對於 author 下載的部分的 url 相容性可以提高些，很多時候不會是停留在 profile 頁面
