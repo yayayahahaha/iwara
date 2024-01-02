@@ -36,6 +36,7 @@ export function downloadByAuthors(authors) {
 
   function _createFetchAuthorJob(authors) {
     return authors.map((author) => {
+      // TODO 檢查一下 username 和後面的 userId 有什麼區別?
       const username = author.match(AUTHOR_URL_REGEXP)[1]
       const authorInfoApiUrl = createIwaraAuthorApiUrl(username)
 
@@ -47,6 +48,7 @@ export function downloadByAuthors(authors) {
               user: { id: userId },
             } = res
 
+            console.log(`Author name: ${username}`)
             return getIwaraListByUserId(userId).then((res) => ({
               res,
               userId,
@@ -54,6 +56,7 @@ export function downloadByAuthors(authors) {
           })
           .then((payload) => {
             const { res, userId } = payload
+            console.log(`Get all iwara created by ${username}`)
 
             const { count: total } = res
             const maxPageNumber = 50 // HINT 這個是 iwara 寫死的
@@ -65,13 +68,15 @@ export function downloadByAuthors(authors) {
             return new TaskSystem(pageJob, 3).doPromise()
           })
           .then((res) => {
+            // format result to get every urls of author
             return res
               .map((result) => result.data.results)
               .flat()
               .map(({ id, slug }) => `${IWARA_DETAIL_PAGE_PREFIX}${id}${slug ? `/${slug}` : ''}`)
           })
           .then((urls) => {
-            // NEXT 把這個東西直接丟到下載裡面嗎?
+            console.log(`Start download iwara of ${username}`)
+            // TODO 看要不要特別傳接參數下去，用於調整 progressbar 之類等等的顯示
             return downloadByUrls(urls, { taskNumber: 2 })
           })
           .catch(console.error)
