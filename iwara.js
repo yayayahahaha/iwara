@@ -15,6 +15,8 @@ async function start() {
   // authors part
   console.log('Download by authors:')
   await downloadByAuthors(authors).then((result) => {
+    if (result == null) return
+
     // HINT print result
     result.forEach((authorResult) => {
       const successCount = authorResult.data.filter((item) => item.status === 1).length
@@ -31,6 +33,8 @@ async function start() {
   // urls part
   console.log('Download by urls:')
   await downloadByUrls(urls).then((result) => {
+    if (result == null) return
+
     const successCount = result.filter((item) => item.status === 1).length
     const failedCount = result.length - successCount
 
