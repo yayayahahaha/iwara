@@ -1,5 +1,7 @@
 import { downloadByAuthors, downloadByUrls } from './flow.js'
-import { settingCheck } from './utils.js'
+import { LOG_FOLDER, createRelativeFolder, settingCheck } from './utils.js'
+import fs from 'fs'
+import path from 'path'
 
 start()
 
@@ -7,11 +9,24 @@ async function start() {
   const setting = settingCheck()
   if (setting == null) return
 
-  const { urls, authors } = setting
+  createRelativeFolder()
 
+  const { urls, authors } = setting
   // authors part
   console.log('Download by authors:')
-  await downloadByAuthors(authors)
+  await downloadByAuthors(authors).then((result) => {
+    // HINT print result
+    result.forEach((authorResult) => {
+      const successCount = authorResult.data.filter((item) => item.status === 1).length
+      const failedCount = authorResult.data.length - successCount
+      console.log(`${authorResult.meta.jobName}: success: ${successCount}, failed: ${failedCount}`)
+    })
+
+    const logPath = path.resolve(path.join(LOG_FOLDER, `author_download-${Date.now()}.json`))
+    fs.writeFileSync(logPath, JSON.stringify(result, null, 2))
+  })
+
+  console.log('========')
 
   // urls part
   console.log('Download by urls:')
@@ -21,3 +36,4 @@ async function start() {
 // TODO errorLog function, include create log file.
 // TODO 看一下什麼是 TextEncoder, Unit8Array 和 crypto 的 subtle.digest 之類的東西
 // TODO 對於畫面出現 Media failed 的情況做處理
+// TODO 處理一下快取的問題，雖然 youtube-dl 已經有了，但還是會比較慢

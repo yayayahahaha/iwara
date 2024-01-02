@@ -8,6 +8,15 @@ export const AUTHOR_URL_REGEXP = /\/profile\/([^/]+)/
 export const SOURCE_FILE_NAME_VALUE = 'Source'
 export const X_VERSION_HEADER_VALUE = 'X-Version'
 export const SAVED_FOLDER = 'saved'
+export const LOG_FOLDER = 'log'
+
+/**
+ * @function createRelativeFolder
+ * */
+export function createRelativeFolder() {
+  if (!fs.existsSync(LOG_FOLDER)) fs.mkdirSync(LOG_FOLDER)
+  if (!fs.existsSync(SAVED_FOLDER)) fs.mkdirSync(SAVED_FOLDER)
+}
 
 /**
  * @typedef xVersionGeneratorConfig

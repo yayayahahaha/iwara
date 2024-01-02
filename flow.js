@@ -35,43 +35,49 @@ export function downloadByAuthors(authors) {
   return tasks.doPromise()
 
   function _createFetchAuthorJob(authors) {
-    return authors.map((author) => async () => {
+    return authors.map((author) => {
       const username = author.match(AUTHOR_URL_REGEXP)[1]
       const authorInfoApiUrl = createIwaraAuthorApiUrl(username)
 
-      return fetch(authorInfoApiUrl)
-        .then((res) => res.json())
-        .then(async (res) => {
-          const {
-            user: { id: userId },
-          } = res
+      const job = async () => {
+        return fetch(authorInfoApiUrl)
+          .then((res) => res.json())
+          .then(async (res) => {
+            const {
+              user: { id: userId },
+            } = res
 
-          return getIwaraListByUserId(userId).then((res) => ({
-            res,
-            userId,
-          }))
-        })
-        .then((payload) => {
-          const { res, userId } = payload
+            return getIwaraListByUserId(userId).then((res) => ({
+              res,
+              userId,
+            }))
+          })
+          .then((payload) => {
+            const { res, userId } = payload
 
-          const { count: total } = res
-          const maxPageNumber = 50 // HINT 這個是 iwara 寫死的
+            const { count: total } = res
+            const maxPageNumber = 50 // HINT 這個是 iwara 寫死的
 
-          const requestPages = new Array(Math.ceil(total / maxPageNumber)).fill().map((_, i) => i)
-          const pageJob = requestPages.map((page) => () => getIwaraListByUserId(userId, { page, limit: maxPageNumber }))
-          return new TaskSystem(pageJob, 3).doPromise()
-        })
-        .then((res) => {
-          return res
-            .map((result) => result.data.results)
-            .flat()
-            .map(({ id, slug }) => `${IWARA_DETAIL_PAGE_PREFIX}${id}${slug ? `/${slug}` : ''}`)
-        })
-        .then((urls) => {
-          // NEXT 把這個東西直接丟到下載裡面嗎?
-          return downloadByUrls(urls, { taskNumber: 2 })
-        })
-        .catch(console.error)
+            const requestPages = new Array(Math.ceil(total / maxPageNumber)).fill().map((_, i) => i)
+            const pageJob = requestPages.map(
+              (page) => () => getIwaraListByUserId(userId, { page, limit: maxPageNumber })
+            )
+            return new TaskSystem(pageJob, 3).doPromise()
+          })
+          .then((res) => {
+            return res
+              .map((result) => result.data.results)
+              .flat()
+              .map(({ id, slug }) => `${IWARA_DETAIL_PAGE_PREFIX}${id}${slug ? `/${slug}` : ''}`)
+          })
+          .then((urls) => {
+            // NEXT 把這個東西直接丟到下載裡面嗎?
+            return downloadByUrls(urls, { taskNumber: 2 })
+          })
+          .catch(console.error)
+      }
+
+      return new Job({ job, jobName: username })
     })
   }
 }
@@ -132,7 +138,7 @@ export async function downloadByUrls(urls, taskSystemConfig = {}) {
               .then((iwaraInfo) => {
                 const { id, slug, title, username, downloadUrl } = iwaraInfo
 
-                // 這裡用 path 來改寫，像是 join 或 resolve
+                // TODO 這裡用 path 來改寫，像是 join 或 resolve
                 const fileName = `${SAVED_FOLDER}/${username}/${title}-${id}_${slug}.mp4`
 
                 // TODO 這裡要取得 youtube-dl 的 download progress? 的 callback 去呼叫 Job 的 `updateProgress` or `setTotalProgress`
