@@ -30,7 +30,12 @@ async function start() {
 
   // urls part
   console.log('Download by urls:')
-  await downloadByUrls(urls)
+  await downloadByUrls(urls).then((result) => {
+    const successCount = result.filter((item) => item.status === 1).length
+    const failedCount = result.length - successCount
+
+    console.log(`url result: success: ${successCount}, failed: ${failedCount} `)
+  })
 }
 
 // TODO errorLog function, include create log file.
