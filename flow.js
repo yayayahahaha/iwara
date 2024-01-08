@@ -37,8 +37,9 @@ export function downloadByAuthors(authors) {
 
   function _createFetchAuthorJob(authors) {
     return authors.map((author) => {
-      // TODO 檢查一下 username 和後面的 userId 有什麼區別?
       const username = author.match(AUTHOR_URL_REGEXP)[1]
+
+      // 單憑 username 沒辦法取得資料，這個 api 是用來取 userId 的
       const authorInfoApiUrl = createIwaraAuthorApiUrl(username)
 
       const job = async () => {
@@ -49,7 +50,6 @@ export function downloadByAuthors(authors) {
               user: { id: userId },
             } = res
 
-            console.log(`Author name: ${username}`)
             return getIwaraListByUserId(userId).then((res) => ({
               res,
               userId,
@@ -217,3 +217,4 @@ export async function downloadByUrls(urls, taskSystemConfig = {}) {
 
 // TODO 有些網址出來的會是一個 youtube: https://www.iwara.tv/video/mbrgxcm56rc2g4orp/kkvmd
 // TODO 對於 author 下載的部分的 url 相容性可以提高些，很多時候不會是停留在 profile 頁面
+// TODO 把下載的網址放進 job payload 裡面，可以做很多事情
