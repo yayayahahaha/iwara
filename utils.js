@@ -37,11 +37,9 @@ export function createCacheFile() {
     })
 
     .map((authorInfo) => {
-      authorInfo.iwaraList = authorInfo.iwaraList
-        .filter((iwaraName) => iwaraName !== MAC_DS_STORE)
-
-        // TEST 這個是測試用的, 整理完畢後可以刪除
-        .filter((iwaraName) => iwaraName.match(regExpGetIdAndSlug) != null)
+      authorInfo.iwaraList = authorInfo.iwaraList.filter(
+        (iwaraName) => iwaraName !== MAC_DS_STORE && !/\.part$/.test(iwaraName)
+      )
       return authorInfo
     })
 
