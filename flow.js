@@ -4,6 +4,7 @@ import { TaskSystem } from 'npm-flyc'
 const { Job } = TaskSystem
 import loggerCreater from 'progress-estimator'
 const logger = loggerCreater()
+import fs from 'fs'
 
 import {
   REFERER_VALUE,
@@ -145,6 +146,8 @@ export async function downloadByUrls(urls, taskSystemConfig = {}) {
 
                 // TODO 這裡用 path 來改寫，像是 join 或 resolve
                 const fileName = `${SAVED_FOLDER}/${username}/${title}-${id}_${slug}.mp4`
+
+                if (fs.existsSync(fileName)) return null
 
                 // TODO 這裡要取得 youtube-dl 的 download progress? 的 callback 去呼叫 Job 的 `updateProgress` or `setTotalProgress`
                 const downloadPromise = youtubeDl(downloadUrl, { o: fileName, dumpJson: true })
