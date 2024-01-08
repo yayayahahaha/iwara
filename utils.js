@@ -26,7 +26,7 @@ export function createRelativeFolder() {
  * @todo document stuff
  * */
 export function createCacheFile() {
-  const regExpGetIdAndSlug = /-([A-Za-z0-9]+)_(\w+)\.\w+$/
+  const regExpGetIdAndSlug = /-([A-Za-z0-9]+)_([\w-]+)\.\w+$/
 
   const cacheContentList = fs
     .readdirSync(SAVED_FOLDER)
@@ -49,7 +49,7 @@ export function createCacheFile() {
       const { authorName, iwaraList } = authorInfo
       return iwaraList.map((iwaraName) => {
         const [, id, slug] = iwaraName.match(regExpGetIdAndSlug)
-        return [`${id}-${slug}`, { authorName, id, slug }]
+        return [createCacheKey(id, slug), { authorName, id, slug }]
       })
     })
     .flat()
@@ -57,6 +57,15 @@ export function createCacheFile() {
   const cacheContentMap = Object.fromEntries(cacheContentList)
 
   fs.writeFileSync(CACHE_FILE_NAME, JSON.stringify(cacheContentMap, null, 2))
+  return cacheContentMap
+}
+
+/**
+ * @function createCacheKey
+ * @todo document
+ * */
+export function createCacheKey(iwaraId, slug = '_') {
+  return `${iwaraId}-${slug}`
 }
 
 /**
@@ -132,7 +141,7 @@ export function urlFormatter(url) {
  * @todo document
  * */
 export function getUrlIdAndSlug(url) {
-  const URL_ID_REGEXP = /\/video\/(\w+)\/(\w+)/
+  const URL_ID_REGEXP = /\/video\/(\w+)\/([\w-]+)/
   let matchResult = url.match(URL_ID_REGEXP)
 
   if (matchResult != null) {

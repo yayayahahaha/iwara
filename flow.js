@@ -19,6 +19,7 @@ import {
   createIwaraApiUrl,
   createIwaraAuthorApiUrl,
   getIwaraListByUserId,
+  createCacheKey,
 } from './utils.js'
 
 /**
@@ -27,7 +28,7 @@ import {
  * @returns {Promise}
  * @todo config implement and document, make a primary-key of items for cache
  * */
-export function downloadByAuthors(authors) {
+export function downloadByAuthors(authors, { cacheMap = {} } = {}) {
   if (authors == null) return Promise.resolve(null)
 
   const jobs = _createFetchAuthorJob(authors)
@@ -78,7 +79,7 @@ export function downloadByAuthors(authors) {
           .then((urls) => {
             console.log(`Start download iwara of ${username}`)
             // TODO 看要不要特別傳接參數下去，用於調整 progressbar 之類等等的顯示
-            return downloadByUrls(urls, { taskNumber: 2 })
+            return downloadByUrls(urls, { taskNumber: 2, cacheMap })
           })
           .catch(console.error)
       }
@@ -94,11 +95,10 @@ export function downloadByAuthors(authors) {
  * @returns {Promise}
  * @todo config implement and document
  * */
-export async function downloadByUrls(urls, taskSystemConfig = {}) {
+export async function downloadByUrls(urls, config = {}) {
   if (urls == null) return null
 
-  const { taskNumber = 3 } = taskSystemConfig
-
+  const { taskNumber = 3, cacheMap = {} } = config
   const jobsGetInfo = _createFetchUrlInfoJob(urls)
   const tasksGetInfo = new TaskSystem(jobsGetInfo, taskNumber)
   return tasksGetInfo
@@ -142,8 +142,9 @@ export async function downloadByUrls(urls, taskSystemConfig = {}) {
                   })
               })
               .then((iwaraInfo) => {
-                const { id, slug, title, username, downloadUrl } = iwaraInfo
+                const { id, slug, title: originTitle, username, downloadUrl } = iwaraInfo
 
+                const title = originTitle.replace(/\//g, '_')
                 // TODO 這裡用 path 來改寫，像是 join 或 resolve
                 const fileName = `${SAVED_FOLDER}/${username}/${title}-${id}_${slug}.mp4`
 
@@ -182,36 +183,42 @@ export async function downloadByUrls(urls, taskSystemConfig = {}) {
    * @todo it's a little bit hard to read, refactor later
    * */
   function _createFetchUrlInfoJob(urls) {
-    return urls.map((url) => {
-      const { id, slug } = getUrlIdAndSlug(url)
-      const iwaraApiUrl = createIwaraApiUrl(id)
+    return urls
+      .filter((url) => {
+        const { id, slug } = getUrlIdAndSlug(url)
+        const cacheKey = createCacheKey(id, slug)
+        return cacheMap[cacheKey] == null
+      })
+      .map((url) => {
+        const { id, slug } = getUrlIdAndSlug(url)
+        const iwaraApiUrl = createIwaraApiUrl(id)
 
-      return async () => {
-        return fetch(iwaraApiUrl)
-          .then((res) => res.json())
-          .then(async (res) => {
-            const {
-              fileUrl: fileUrlApi,
-              title,
-              user: { username },
-              file: { id: fileId },
-            } = res
+        return async () => {
+          return fetch(iwaraApiUrl)
+            .then((res) => res.json())
+            .then(async (res) => {
+              const {
+                fileUrl: fileUrlApi,
+                title,
+                user: { username },
+                file: { id: fileId },
+              } = res
 
-            const { expires } = Object.fromEntries(new URLSearchParams(new URL(fileUrlApi).search))
+              const { expires } = Object.fromEntries(new URLSearchParams(new URL(fileUrlApi).search))
 
-            return {
-              url,
-              id,
-              slug,
-              expires,
-              fileId,
-              title,
-              username,
-              fileUrlApi,
-            }
-          })
-      }
-    })
+              return {
+                url,
+                id,
+                slug,
+                expires,
+                fileId,
+                title,
+                username,
+                fileUrlApi,
+              }
+            })
+        }
+      })
   }
 }
 
