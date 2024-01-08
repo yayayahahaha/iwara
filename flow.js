@@ -27,7 +27,7 @@ import {
  * @todo config implement and document
  * */
 export function downloadByAuthors(authors) {
-  if (authors == null) return null
+  if (authors == null) return Promise.resolve(null)
 
   const jobs = _createFetchAuthorJob(authors)
   const tasks = new TaskSystem(jobs, 3)
