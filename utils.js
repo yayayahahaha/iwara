@@ -1,4 +1,5 @@
 import fs from 'fs'
+import path from 'path'
 
 export const IWARA_AUTHOR_API_PREFIX = 'https://api.iwara.tv/profile/'
 export const IWARA_DETAIL_API_PREFIX = 'https://api.iwara.tv/video/'
@@ -9,6 +10,8 @@ export const SOURCE_FILE_NAME_VALUE = 'Source'
 export const X_VERSION_HEADER_VALUE = 'X-Version'
 export const SAVED_FOLDER = 'saved'
 export const LOG_FOLDER = 'log'
+const MAC_DS_STORE = '.DS_Store'
+const CACHE_FILE_NAME = '.cache'
 
 /**
  * @function createRelativeFolder
@@ -16,6 +19,51 @@ export const LOG_FOLDER = 'log'
 export function createRelativeFolder() {
   if (!fs.existsSync(LOG_FOLDER)) fs.mkdirSync(LOG_FOLDER)
   if (!fs.existsSync(SAVED_FOLDER)) fs.mkdirSync(SAVED_FOLDER)
+}
+
+/**
+ * @function createCacheFile
+ * @todo document stuff
+ * */
+export function createCacheFile() {
+  const regExpGetIdAndSlug = /-([A-Za-z0-9]+)_([\w-]+)\.\w+$/
+
+  const cacheContentList = fs
+    .readdirSync(SAVED_FOLDER)
+    .filter((authorName) => authorName !== MAC_DS_STORE)
+    .map((authorName) => {
+      const authorPath = path.join(SAVED_FOLDER, authorName)
+      return { authorName, iwaraList: fs.readdirSync(authorPath) }
+    })
+
+    .map((authorInfo) => {
+      authorInfo.iwaraList = authorInfo.iwaraList.filter(
+        (iwaraName) => iwaraName !== MAC_DS_STORE && !/\.part$/.test(iwaraName)
+      )
+      return authorInfo
+    })
+
+    .map((authorInfo) => {
+      const { authorName, iwaraList } = authorInfo
+      return iwaraList.map((iwaraName) => {
+        const [, id, slug] = iwaraName.match(regExpGetIdAndSlug)
+        return [createCacheKey(id, slug), { authorName, id, slug }]
+      })
+    })
+    .flat()
+
+  const cacheContentMap = Object.fromEntries(cacheContentList)
+
+  fs.writeFileSync(CACHE_FILE_NAME, JSON.stringify(cacheContentMap, null, 2))
+  return cacheContentMap
+}
+
+/**
+ * @function createCacheKey
+ * @todo document
+ * */
+export function createCacheKey(iwaraId, slug = '_') {
+  return `${iwaraId}-${slug}`
 }
 
 /**
@@ -91,7 +139,7 @@ export function urlFormatter(url) {
  * @todo document
  * */
 export function getUrlIdAndSlug(url) {
-  const URL_ID_REGEXP = /\/video\/(\w+)\/(\w+)/
+  const URL_ID_REGEXP = /\/video\/(\w+)\/([\w-]+)/
   let matchResult = url.match(URL_ID_REGEXP)
 
   if (matchResult != null) {

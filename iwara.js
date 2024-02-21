@@ -1,5 +1,5 @@
 import { downloadByAuthors, downloadByUrls } from './flow.js'
-import { LOG_FOLDER, createRelativeFolder, settingCheck } from './utils.js'
+import { LOG_FOLDER, createCacheFile, createRelativeFolder, settingCheck } from './utils.js'
 import fs from 'fs'
 import path from 'path'
 
@@ -10,11 +10,12 @@ async function start() {
   if (setting == null) return
 
   createRelativeFolder()
+  const cacheMap = createCacheFile()
 
   const { urls, authors } = setting
   // authors part
   console.log('Download by authors:')
-  await downloadByAuthors(authors).then((result) => {
+  await downloadByAuthors(authors, { cacheMap }).then((result) => {
     if (result == null) return
 
     // HINT print result
@@ -32,7 +33,7 @@ async function start() {
 
   // urls part
   console.log('Download by urls:')
-  await downloadByUrls(urls).then((result) => {
+  await downloadByUrls(urls, { cacheMap }).then((result) => {
     if (result == null) return
 
     const successCount = result.filter((item) => item.status === 1).length
