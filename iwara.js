@@ -3,11 +3,6 @@ import { LOG_FOLDER, createCacheFile, createRelativeFolder, settingCheck } from 
 import fs from 'fs'
 import path from 'path'
 
-
-在繼續寫 code 之前，先處理一下電腦容量的問題
-看是要直接買一個新的硬碟、或是處理一下之前那個 1TB 的吧
-
-
 start()
 
 async function start() {
